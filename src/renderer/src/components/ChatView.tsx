@@ -7,7 +7,8 @@ import {
   User,
   Sparkles,
   Trash2,
-  ChevronDown
+  ChevronDown,
+  Play
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { useLang } from '../contexts/LanguageContext'
@@ -19,6 +20,7 @@ interface ChatMessageType {
   content: string
   timestamp: Date
   isStreaming?: boolean
+  bulkPlan?: BulkEmailItem[] | null
 }
 
 function generateId(): string {
@@ -132,6 +134,12 @@ export default function ChatView(): React.ReactElement {
             ]
           })
         }
+        // Store plan on the message for the Execute button
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, bulkPlan: plan } : m
+          )
+        )
         setTimeout(() => setBulkPlan(plan), 300)
       }
     } catch (err: unknown) {
@@ -262,7 +270,7 @@ export default function ChatView(): React.ReactElement {
         )}
 
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+          <div key={msg.id} className={`flex gap-3 msg-animate ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
             <div
               className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${
                 msg.role === 'assistant' ? 'bg-accent' : 'bg-surface-300'
@@ -275,22 +283,33 @@ export default function ChatView(): React.ReactElement {
               )}
             </div>
 
-            <div
-              className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-accent text-white rounded-tr-sm'
-                  : 'bg-surface-100 text-white/90 rounded-tl-sm border border-border'
-              }`}
-            >
-              {msg.role === 'assistant' ? (
-                <div className="prose prose-invert prose-sm max-w-none">
-                  <ReactMarkdown>{stripBulkBlock(msg.content)}</ReactMarkdown>
-                </div>
-              ) : (
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-              )}
-              {msg.isStreaming && (
-                <span className="inline-block w-1.5 h-4 bg-accent animate-pulse ml-0.5" />
+            <div className="flex flex-col gap-1.5 max-w-[75%]">
+              <div
+                className={`chat-bubble rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-accent text-white rounded-tr-sm'
+                    : 'bg-surface-100 text-white/90 rounded-tl-sm border border-border'
+                }`}
+              >
+                {msg.role === 'assistant' ? (
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <ReactMarkdown>{stripBulkBlock(msg.content)}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                )}
+                {msg.isStreaming && (
+                  <span className="inline-block w-1.5 h-4 bg-accent animate-pulse ml-0.5" />
+                )}
+              </div>
+              {msg.role === 'assistant' && !msg.isStreaming && msg.bulkPlan && msg.bulkPlan.length > 0 && (
+                <button
+                  onClick={() => setBulkPlan(msg.bulkPlan!)}
+                  className="self-start flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-accent/15 hover:bg-accent/25 border border-accent/30 text-accent hover:text-white transition-colors fade-slide-up"
+                >
+                  <Play size={11} />
+                  {t('executeAction')}
+                </button>
               )}
             </div>
           </div>

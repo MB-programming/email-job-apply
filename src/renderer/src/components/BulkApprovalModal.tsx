@@ -10,7 +10,10 @@ import {
   ChevronUp,
   CheckCircle2,
   XCircle,
-  Loader2
+  Loader2,
+  Paperclip,
+  Pencil,
+  Check
 } from 'lucide-react'
 import { useLang } from '../contexts/LanguageContext'
 
@@ -19,6 +22,7 @@ export interface BulkEmailItem {
   to: string
   subject: string
   body: string
+  attachments?: Array<{ filename: string; path: string }>
 }
 
 interface BulkResult {
@@ -36,10 +40,13 @@ interface Props {
 
 type Phase = 'review' | 'sending' | 'done'
 
-export default function BulkApprovalModal({ items, onClose, attachments }: Props): React.ReactElement {
+export default function BulkApprovalModal({ items: initialItems, onClose, attachments }: Props): React.ReactElement {
   const { t, isRTL } = useLang()
-  const [checked, setChecked] = useState<Set<number>>(new Set(items.map((_, i) => i)))
+  const [items, setItems] = useState<BulkEmailItem[]>(initialItems)
+  const [checked, setChecked] = useState<Set<number>>(new Set(initialItems.map((_, i) => i)))
   const [expanded, setExpanded] = useState<number | null>(null)
+  const [editing, setEditing] = useState<number | null>(null)
+  const [editDraft, setEditDraft] = useState<Partial<BulkEmailItem>>({})
   const [phase, setPhase] = useState<Phase>('review')
   const [progress, setProgress] = useState({ done: 0, total: 0, current: '' })
   const [results, setResults] = useState<BulkResult[]>([])
@@ -68,10 +75,29 @@ export default function BulkApprovalModal({ items, onClose, attachments }: Props
     setChecked(next)
   }
 
+  const startEdit = (i: number) => {
+    setEditDraft({ to: items[i].to, subject: items[i].subject, body: items[i].body })
+    setEditing(i)
+    setExpanded(i)
+  }
+
+  const saveEdit = (i: number) => {
+    setItems((prev) =>
+      prev.map((item, idx) =>
+        idx === i ? { ...item, ...editDraft } : item
+      )
+    )
+    setEditing(null)
+    setEditDraft({})
+  }
+
   const handleSend = async () => {
     const selectedItems = items
       .filter((_, i) => checked.has(i))
-      .map((item) => ({ ...item, attachments }))
+      .map((item) => ({
+        ...item,
+        attachments: item.attachments ?? attachments
+      }))
 
     setProgress({ done: 0, total: selectedItems.length, current: '' })
     setPhase('sending')
@@ -175,9 +201,28 @@ export default function BulkApprovalModal({ items, onClose, attachments }: Props
                       </div>
                     </div>
 
+                    {/* Attachment badge */}
+                    {(item.attachments ?? attachments)?.length ? (
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20 flex-shrink-0">
+                        <Paperclip size={11} className="text-accent" />
+                        <span className="text-xs text-accent/80">
+                          {(item.attachments ?? attachments)![0].filename}
+                        </span>
+                      </div>
+                    ) : null}
+
                     <div className={`text-right min-w-0 flex-shrink-0 ${isRTL ? 'text-left' : ''}`}>
-                      <p className="text-xs text-white/60 truncate max-w-36">{item.subject}</p>
+                      <p className="text-xs text-white/60 truncate max-w-28">{item.subject}</p>
                     </div>
+
+                    {/* Edit button */}
+                    <button
+                      onClick={() => editing === i ? saveEdit(i) : startEdit(i)}
+                      className="p-1 text-muted hover:text-accent transition-colors flex-shrink-0"
+                      title={editing === i ? t('saveEdit') : t('editEmail')}
+                    >
+                      {editing === i ? <Check size={14} /> : <Pencil size={13} />}
+                    </button>
 
                     <button
                       onClick={() => setExpanded(expanded === i ? null : i)}
@@ -187,16 +232,57 @@ export default function BulkApprovalModal({ items, onClose, attachments }: Props
                     </button>
                   </div>
 
-                  {/* Expanded preview */}
+                  {/* Expanded area — edit or preview */}
                   {expanded === i && (
-                    <div className="px-4 pb-4 border-t border-border/50 pt-3">
-                      <p className="text-xs text-muted mb-2 font-medium uppercase tracking-wider">
-                        Email Preview
-                      </p>
-                      <div
-                        className="text-xs text-white/70 leading-relaxed max-h-40 overflow-y-auto prose prose-invert prose-xs"
-                        dangerouslySetInnerHTML={{ __html: item.body }}
-                      />
+                    <div className="px-4 pb-4 border-t border-border/50 pt-3 space-y-3">
+                      {editing === i ? (
+                        /* Edit mode */
+                        <>
+                          <div>
+                            <label className="block text-xs text-muted mb-1">{t('to')}</label>
+                            <input
+                              className="w-full bg-surface-200 border border-border rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-accent transition-colors"
+                              value={editDraft.to ?? ''}
+                              onChange={(e) => setEditDraft((d) => ({ ...d, to: e.target.value }))}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-muted mb-1">{t('subject')}</label>
+                            <input
+                              className="w-full bg-surface-200 border border-border rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-accent transition-colors"
+                              value={editDraft.subject ?? ''}
+                              onChange={(e) => setEditDraft((d) => ({ ...d, subject: e.target.value }))}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-muted mb-1">{t('emailBody')}</label>
+                            <textarea
+                              rows={6}
+                              className="w-full bg-surface-200 border border-border rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-accent transition-colors resize-none leading-relaxed"
+                              value={editDraft.body ?? ''}
+                              onChange={(e) => setEditDraft((d) => ({ ...d, body: e.target.value }))}
+                            />
+                          </div>
+                          <button
+                            onClick={() => saveEdit(i)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-light text-xs text-white transition-colors"
+                          >
+                            <Check size={12} />
+                            {t('saveEdit')}
+                          </button>
+                        </>
+                      ) : (
+                        /* Preview mode */
+                        <>
+                          <p className="text-xs text-muted font-medium uppercase tracking-wider">
+                            Email Preview
+                          </p>
+                          <div
+                            className="text-xs text-white/70 leading-relaxed max-h-40 overflow-y-auto prose prose-invert prose-xs"
+                            dangerouslySetInnerHTML={{ __html: item.body }}
+                          />
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

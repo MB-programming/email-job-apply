@@ -5,6 +5,7 @@ import Store from 'electron-store'
 import { registerEmailHandlers } from './ipc/emailHandlers'
 import { registerOpenAIHandlers } from './ipc/openaiHandlers'
 import { registerSettingsHandlers } from './ipc/settingsHandlers'
+import { registerScrapingHandlers } from './ipc/scrapingHandlers'
 
 const store = new Store()
 
@@ -60,6 +61,7 @@ app.whenReady().then(() => {
   registerEmailHandlers(store)
   registerOpenAIHandlers(store)
   registerSettingsHandlers(store)
+  registerScrapingHandlers()
 
   createWindow()
 

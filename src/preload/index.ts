@@ -71,6 +71,23 @@ const api = {
     getProfile: () => ipcRenderer.invoke('settings:get-profile'),
     saveProfile: (profile: Record<string, string>) =>
       ipcRenderer.invoke('settings:save-profile', profile)
+  },
+
+  // Scraping operations
+  scraping: {
+    search: (params: {
+      keyword: string
+      location: string
+      maxResults: number
+      sources: string[]
+    }) => ipcRenderer.invoke('scraping:search', params),
+    extractEmail: (url: string) => ipcRenderer.invoke('scraping:extract-email', url),
+    onProgress: (callback: (p: { found: number; msg: string }) => void) => {
+      ipcRenderer.on('scraping:progress', (_, p) => callback(p))
+    },
+    removeProgressListeners: () => {
+      ipcRenderer.removeAllListeners('scraping:progress')
+    }
   }
 }
 

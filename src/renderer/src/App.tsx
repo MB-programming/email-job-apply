@@ -6,9 +6,10 @@ import ChatView from './components/ChatView'
 import InboxView from './components/InboxView'
 import SentView from './components/SentView'
 import SettingsView from './components/SettingsView'
+import JobsView from './components/JobsView'
 import ComposeModal from './components/ComposeModal'
 
-export type View = 'chat' | 'inbox' | 'sent' | 'settings'
+export type View = 'chat' | 'jobs' | 'inbox' | 'sent' | 'settings'
 
 function AppInner(): React.ReactElement {
   const [activeView, setActiveView] = useState<View>('chat')
@@ -25,6 +26,7 @@ function AppInner(): React.ReactElement {
         />
         <main className="flex-1 overflow-hidden">
           {activeView === 'chat' && <ChatView />}
+          {activeView === 'jobs' && <JobsView />}
           {activeView === 'inbox' && <InboxView />}
           {activeView === 'sent' && <SentView />}
           {activeView === 'settings' && <SettingsView />}

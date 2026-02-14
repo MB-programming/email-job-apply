@@ -87,6 +87,12 @@ declare global {
         getProfile: () => Promise<Record<string, string>>
         saveProfile: (profile: Record<string, string>) => Promise<{ success: boolean }>
       }
+      scraping: {
+        search: (params: { keyword: string; location: string; maxResults: number; sources: string[] }) => Promise<Array<{ title: string; company: string; location: string; url: string; email?: string; source: string }>>
+        extractEmail: (url: string) => Promise<string | null>
+        onProgress: (callback: (p: { found: number; msg: string }) => void) => void
+        removeProgressListeners: () => void
+      }
     }
   }
 }

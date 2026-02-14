@@ -96,7 +96,32 @@ const translations = {
     close: 'Close',
     selectAll: 'Select All',
     deselectAll: 'Deselect All',
-    emailsReady: 'emails ready to send'
+    emailsReady: 'emails ready to send',
+    editEmail: 'Edit email',
+    saveEdit: 'Save',
+    emailBody: 'Body',
+    executeAction: 'Execute Action',
+    // Jobs scraper
+    jobScraper: 'Jobs',
+    jobScraperTitle: 'Job Scraper',
+    jobScraperDesc: 'Search for jobs across multiple platforms and collect company emails.',
+    keyword: 'Job Keyword',
+    keywordPlaceholder: 'e.g. React Developer, Frontend Engineer',
+    location: 'Location',
+    locationPlaceholder: 'e.g. Vienna, Austria',
+    maxResults: 'Max Results',
+    sources: 'Sources',
+    searchJobs: 'Search Jobs',
+    searching: 'Searching...',
+    jobsFound: 'jobs found',
+    applySelected: 'Apply to Selected',
+    noJobsFound: 'No jobs found. Try different keywords.',
+    extractingEmail: 'Extracting email...',
+    applyAll: 'Apply to All',
+    jobTitle: 'Title',
+    company: 'Company',
+    emailCol: 'Email',
+    sourceCol: 'Source'
   },
   ar: {
     // Sidebar
@@ -193,7 +218,32 @@ const translations = {
     close: 'إغلاق',
     selectAll: 'تحديد الكل',
     deselectAll: 'إلغاء التحديد',
-    emailsReady: 'رسالة جاهزة للإرسال'
+    emailsReady: 'رسالة جاهزة للإرسال',
+    editEmail: 'تعديل البريد',
+    saveEdit: 'حفظ',
+    emailBody: 'نص البريد',
+    executeAction: 'تنفيذ الأمر',
+    // Jobs scraper
+    jobScraper: 'الوظائف',
+    jobScraperTitle: 'البحث عن وظائف',
+    jobScraperDesc: 'ابحث عن وظائف عبر منصات متعددة واجمع ايميلات الشركات.',
+    keyword: 'كلمة البحث',
+    keywordPlaceholder: 'مثال: React Developer, Frontend Engineer',
+    location: 'الموقع',
+    locationPlaceholder: 'مثال: فيينا، النمسا',
+    maxResults: 'أقصى عدد نتائج',
+    sources: 'المصادر',
+    searchJobs: 'ابحث عن وظائف',
+    searching: 'جارٍ البحث...',
+    jobsFound: 'وظيفة وُجدت',
+    applySelected: 'تقدم للمحدد',
+    noJobsFound: 'لا توجد نتائج. جرب كلمات بحث مختلفة.',
+    extractingEmail: 'استخراج الإيميل...',
+    applyAll: 'تقدم للكل',
+    jobTitle: 'المسمى الوظيفي',
+    company: 'الشركة',
+    emailCol: 'الإيميل',
+    sourceCol: 'المصدر'
   }
 }
 

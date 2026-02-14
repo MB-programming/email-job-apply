@@ -2,19 +2,9 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-html,
-body,
-#root {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
+html, body, #root { height: 100%; width: 100%; overflow: hidden; }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
@@ -23,81 +13,78 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
+
+/* ── Message animations ── */
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes blink { 0%,100%{ opacity:1 } 50%{ opacity:0 } }
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+.msg-animate    { animation: msgIn 0.28s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+.fade-slide-up  { animation: fadeSlideUp 0.2s ease both; }
+.cursor-blink   { animation: blink 0.9s step-end infinite; }
+.progress-shimmer {
+  background: linear-gradient(90deg, #7c3aed 25%, #a78bfa 50%, #7c3aed 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
+/* ── Chat bubble overflow fix ── */
+.chat-bubble {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  min-width: 0;
+  overflow: hidden;
 }
+.chat-bubble pre  { overflow-x: auto; max-width: 100%; }
+.chat-bubble code { word-break: break-all; }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #444;
-}
-
-/* Prose overrides for dark mode */
+/* ── Prose ── */
 .prose-invert pre {
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
   border-radius: 8px;
+  overflow-x: auto;
+  max-width: 100%;
 }
-
 .prose-invert code {
   background: #1a1a1a;
   padding: 2px 5px;
   border-radius: 4px;
   font-size: 0.85em;
   color: #c4b5fd;
+  word-break: break-all;
 }
-
-.prose-invert a {
-  color: #8b5cf6;
-  text-decoration: none;
-}
-
-.prose-invert a:hover {
-  text-decoration: underline;
-}
-
-.prose-invert table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.prose-invert th,
-.prose-invert td {
+.prose-invert a { color: #8b5cf6; text-decoration: none; }
+.prose-invert a:hover { text-decoration: underline; }
+.prose-invert table { border-collapse: collapse; width: 100%; }
+.prose-invert th, .prose-invert td {
   border: 1px solid #2a2a2a;
   padding: 6px 12px;
   text-align: left;
   font-size: 0.875rem;
 }
+.prose-invert th { background: #1a1a1a; font-weight: 600; }
 
-.prose-invert th {
-  background: #1a1a1a;
-  font-weight: 600;
-}
-
-/* Selection color */
-::selection {
-  background: rgba(124, 58, 237, 0.3);
-}
-
-/* Focus ring */
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible {
+/* ── Selection & focus ── */
+::selection { background: rgba(124, 58, 237, 0.3); }
+button:focus-visible, input:focus-visible, textarea:focus-visible {
   outline: 2px solid rgba(124, 58, 237, 0.5);
   outline-offset: 2px;
 }
-
-input:focus,
-textarea:focus {
-  outline: none;
-}
+input:focus, textarea:focus { outline: none; }

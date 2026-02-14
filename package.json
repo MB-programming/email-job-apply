@@ -1,6 +1,6 @@
 {
   "name": "email-job-apply",
-  "productName": "MailBot",
+  "productName": "Orbtasoft Jobs Apply",
   "version": "1.0.0",
   "description": "AI-powered email job application automation bot",
   "main": "out/main/index.js",
@@ -13,8 +13,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
   },
   "build": {
-    "appId": "com.mailbot.email-job-apply",
-    "productName": "MailBot",
+    "appId": "com.orbtasoft.jobs-apply",
+    "productName": "Orbtasoft Jobs Apply",
     "directories": {
       "output": "dist",
       "buildResources": "resources"
@@ -48,10 +48,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "MailBot"
+      "shortcutName": "Orbtasoft Jobs Apply"
     },
     "dmg": {
-      "title": "MailBot ${version}",
+      "title": "Orbtasoft Jobs Apply ${version}",
       "contents": [
         { "x": 130, "y": 220 },
         { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
