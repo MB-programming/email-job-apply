@@ -22,15 +22,31 @@ export function registerSettingsHandlers(store: Store): void {
     return { success: true }
   })
 
-  ipcMain.handle('settings:get-openai-key', () => {
-    const key = store.get('openaiApiKey') as string | undefined
+  // Generic masked key helpers
+  function getMaskedKey(storeKey: string): string | null {
+    const key = store.get(storeKey) as string | undefined
     return key ? '••••••••••••••••' + key.slice(-4) : null
+  }
+
+  function saveKey(storeKey: string, value: string): void {
+    if (!value.startsWith('••')) store.set(storeKey, value)
+  }
+
+  ipcMain.handle('settings:get-openai-key', () => getMaskedKey('openaiApiKey'))
+  ipcMain.handle('settings:save-openai-key', (_, key: string) => {
+    saveKey('openaiApiKey', key)
+    return { success: true }
   })
 
-  ipcMain.handle('settings:save-openai-key', (_, key: string) => {
-    if (!key.startsWith('••')) {
-      store.set('openaiApiKey', key)
-    }
+  ipcMain.handle('settings:get-gemini-key', () => getMaskedKey('geminiApiKey'))
+  ipcMain.handle('settings:save-gemini-key', (_, key: string) => {
+    saveKey('geminiApiKey', key)
+    return { success: true }
+  })
+
+  ipcMain.handle('settings:get-groq-key', () => getMaskedKey('groqApiKey'))
+  ipcMain.handle('settings:save-groq-key', (_, key: string) => {
+    saveKey('groqApiKey', key)
     return { success: true }
   })
 

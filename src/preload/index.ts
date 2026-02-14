@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { ChatMessage } from '../main/services/openaiService'
-import type { EmailConfig } from '../main/services/emailService'
+import type { EmailConfig, BulkSendItem, BulkSendResult } from '../main/services/emailService'
 
 const api = {
   // Window controls
@@ -20,11 +20,21 @@ const api = {
       body: string
       attachments?: Array<{ filename: string; path: string }>
     }) => ipcRenderer.invoke('email:send', payload),
+    sendBulk: (items: BulkSendItem[]): Promise<BulkSendResult[]> =>
+      ipcRenderer.invoke('email:send-bulk', items),
     testConnection: () => ipcRenderer.invoke('email:test-connection'),
-    pickAttachment: () => ipcRenderer.invoke('email:pick-attachment')
+    pickAttachment: () => ipcRenderer.invoke('email:pick-attachment'),
+    onBulkProgress: (
+      callback: (p: { done: number; total: number; current: string }) => void
+    ) => {
+      ipcRenderer.on('email:bulk-progress', (_, p) => callback(p))
+    },
+    removeBulkProgressListeners: () => {
+      ipcRenderer.removeAllListeners('email:bulk-progress')
+    }
   },
 
-  // OpenAI operations
+  // AI operations
   openai: {
     chat: (messages: ChatMessage[]) => ipcRenderer.invoke('openai:chat', messages),
     generateJobEmail: (params: {
@@ -35,6 +45,9 @@ const api = {
       senderSkills: string
       cvPath?: string
     }) => ipcRenderer.invoke('openai:generate-job-email', params),
+    getModels: () => ipcRenderer.invoke('openai:get-models'),
+    getSelectedModel: (): Promise<string> => ipcRenderer.invoke('openai:get-selected-model'),
+    setSelectedModel: (modelId: string) => ipcRenderer.invoke('openai:set-selected-model', modelId),
     onStreamChunk: (callback: (chunk: { delta: string; done: boolean }) => void) => {
       ipcRenderer.on('openai:stream-chunk', (_, chunk) => callback(chunk))
     },
@@ -51,6 +64,10 @@ const api = {
       ipcRenderer.invoke('settings:save-email-config', config),
     getOpenAIKey: (): Promise<string | null> => ipcRenderer.invoke('settings:get-openai-key'),
     saveOpenAIKey: (key: string) => ipcRenderer.invoke('settings:save-openai-key', key),
+    getGeminiKey: (): Promise<string | null> => ipcRenderer.invoke('settings:get-gemini-key'),
+    saveGeminiKey: (key: string) => ipcRenderer.invoke('settings:save-gemini-key', key),
+    getGroqKey: (): Promise<string | null> => ipcRenderer.invoke('settings:get-groq-key'),
+    saveGroqKey: (key: string) => ipcRenderer.invoke('settings:save-groq-key', key),
     getProfile: () => ipcRenderer.invoke('settings:get-profile'),
     saveProfile: (profile: Record<string, string>) =>
       ipcRenderer.invoke('settings:save-profile', profile)

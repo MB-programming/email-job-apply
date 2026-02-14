@@ -11,40 +11,115 @@ export interface StreamChunk {
   done: boolean
 }
 
+export interface ModelConfig {
+  provider: 'openai' | 'gemini' | 'groq'
+  model: string
+  apiKey: string
+}
+
+// All available models — free ones first
+export const AVAILABLE_MODELS = [
+  // FREE TIER
+  {
+    id: 'gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash',
+    provider: 'gemini' as const,
+    tier: 'free',
+    description: 'Google · Fast & free'
+  },
+  {
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
+    provider: 'gemini' as const,
+    tier: 'free',
+    description: 'Google · Free tier'
+  },
+  {
+    id: 'llama-3.3-70b-versatile',
+    name: 'Llama 3.3 70B',
+    provider: 'groq' as const,
+    tier: 'free',
+    description: 'Groq · Fast & free'
+  },
+  {
+    id: 'llama-3.1-8b-instant',
+    name: 'Llama 3.1 8B',
+    provider: 'groq' as const,
+    tier: 'free',
+    description: 'Groq · Fastest & free'
+  },
+  // PAID
+  {
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    provider: 'openai' as const,
+    tier: 'paid',
+    description: 'OpenAI · Cheap & smart'
+  },
+  {
+    id: 'gpt-4o',
+    name: 'GPT-4o',
+    provider: 'openai' as const,
+    tier: 'paid',
+    description: 'OpenAI · Best quality'
+  },
+  {
+    id: 'gpt-3.5-turbo',
+    name: 'GPT-3.5 Turbo',
+    provider: 'openai' as const,
+    tier: 'paid',
+    description: 'OpenAI · Low cost'
+  }
+]
+
+function buildClient(config: ModelConfig): OpenAI {
+  if (config.provider === 'gemini') {
+    return new OpenAI({
+      apiKey: config.apiKey,
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+    })
+  }
+  if (config.provider === 'groq') {
+    return new OpenAI({
+      apiKey: config.apiKey,
+      baseURL: 'https://api.groq.com/openai/v1'
+    })
+  }
+  return new OpenAI({ apiKey: config.apiKey })
+}
+
 const SYSTEM_PROMPT = `You are an intelligent job application assistant. Your main capabilities:
 
-1. **Company Research**: Find programming/tech companies in specific countries or cities (especially Austria), and compile detailed lists with names, websites, email contacts, and descriptions.
+1. **Company Research**: Find programming/tech companies in specific countries or cities (especially Austria), and compile lists with names, websites, email contacts, and descriptions.
 
-2. **Email Drafting**: Write professional job application emails in German or English. When writing in German, use formal language (Sie-Form). Always include:
-   - Professional greeting
-   - Brief introduction
-   - Why you're interested in the company
-   - Your key skills and experience
-   - Request for interview/consideration
-   - Professional closing
+2. **Email Drafting**: Write professional job application emails in German (Sie-Form) or English. Include greeting, introduction, why the company, skills, and professional closing.
 
-3. **Job Application Management**: Help organize and track applications, suggest follow-up strategies.
+3. **Bulk Email Planning**: When asked to apply/send to multiple companies, ALWAYS output a structured plan as a fenced JSON block BEFORE sending anything. The block must be tagged exactly like this:
 
-4. **Email Analysis**: Analyze received emails and suggest appropriate responses.
+\`\`\`bulk_email_plan
+[
+  {
+    "company": "Company Name GmbH",
+    "to": "jobs@company.at",
+    "subject": "Bewerbung als Softwareentwickler",
+    "body": "<p>Sehr geehrte Damen und Herren...</p>"
+  }
+]
+\`\`\`
 
-When asked to find companies, always provide:
-- Company name
-- Industry/specialization
-- Website
-- Email contact (if publicly available, or suggest contact form)
-- Brief description
-- Location in Austria
+After the block, add a short summary like: "I prepared N emails. Please review the list and approve to send."
 
-Format company lists as structured JSON when the user will use them for sending applications.
+4. **IMPORTANT**: Never claim to have sent emails directly. Always output the bulk_email_plan block first for user approval.
 
-Always be professional, accurate, and helpful. Communicate in the same language the user uses.`
+When finding companies, provide: name, industry, website, email (if public), city in Austria.
+Communicate in the same language the user uses.`
 
 export async function streamChat(
-  apiKey: string,
+  config: ModelConfig,
   messages: ChatMessage[],
   onChunk: (chunk: StreamChunk) => void
 ): Promise<void> {
-  const client = new OpenAI({ apiKey })
+  const client = buildClient(config)
 
   const formattedMessages: ChatCompletionMessageParam[] = [
     { role: 'system', content: SYSTEM_PROMPT },
@@ -52,7 +127,7 @@ export async function streamChat(
   ]
 
   const stream = await client.chat.completions.create({
-    model: 'gpt-4o',
+    model: config.model,
     messages: formattedMessages,
     stream: true,
     temperature: 0.7,
@@ -67,7 +142,7 @@ export async function streamChat(
 }
 
 export async function generateJobEmail(
-  apiKey: string,
+  config: ModelConfig,
   params: {
     companyName: string
     jobTitle?: string
@@ -77,7 +152,7 @@ export async function generateJobEmail(
     cvPath?: string
   }
 ): Promise<string> {
-  const client = new OpenAI({ apiKey })
+  const client = buildClient(config)
 
   const prompt =
     params.language === 'de'
@@ -87,17 +162,15 @@ Skills: ${params.senderSkills}
 ${params.jobTitle ? `Angestrebte Position: ${params.jobTitle}` : 'Initiativbewerbung als Programmierer/Softwareentwickler'}
 ${params.cvPath ? 'Lebenslauf ist beigefügt.' : ''}
 
-Schreibe eine vollständige E-Mail mit Betreff und Inhalt. Formatierung: HTML.`
-      : `Write a professional job application email in English to company "${params.companyName}".
-Applicant: ${params.senderName}
-Skills: ${params.senderSkills}
-${params.jobTitle ? `Target position: ${params.jobTitle}` : 'Spontaneous application as a programmer/software developer'}
-${params.cvPath ? 'CV is attached.' : ''}
+Beginne mit "Betreff: ..." auf der ersten Zeile. Dann der HTML-Inhalt der E-Mail.`
+      : `Write a professional job application email in English to "${params.companyName}".
+Applicant: ${params.senderName}, Skills: ${params.senderSkills}
+${params.jobTitle ? `Target position: ${params.jobTitle}` : 'Spontaneous application as software developer'}
 
-Write a complete email with subject line and body. Format: HTML.`
+Start with "Subject: ..." on the first line. Then the HTML body.`
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4o',
+    model: config.model,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: prompt }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { LanguageProvider } from './contexts/LanguageContext'
 import TitleBar from './components/TitleBar'
 import Sidebar from './components/Sidebar'
 import ChatView from './components/ChatView'
@@ -9,7 +10,7 @@ import ComposeModal from './components/ComposeModal'
 
 export type View = 'chat' | 'inbox' | 'sent' | 'settings'
 
-export default function App(): React.ReactElement {
+function AppInner(): React.ReactElement {
   const [activeView, setActiveView] = useState<View>('chat')
   const [composeOpen, setComposeOpen] = useState(false)
 
@@ -31,5 +32,13 @@ export default function App(): React.ReactElement {
       </div>
       {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} />}
     </div>
+  )
+}
+
+export default function App(): React.ReactElement {
+  return (
+    <LanguageProvider>
+      <AppInner />
+    </LanguageProvider>
   )
 }

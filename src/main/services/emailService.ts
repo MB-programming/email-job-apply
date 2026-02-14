@@ -147,6 +147,83 @@ export async function sendEmail(
   })
 }
 
+export interface BulkSendItem {
+  company: string
+  to: string
+  subject: string
+  body: string
+  attachments?: Array<{ filename: string; path: string }>
+}
+
+export interface BulkSendResult {
+  company: string
+  to: string
+  success: boolean
+  error?: string
+}
+
+export async function sendBulkEmails(
+  config: EmailConfig,
+  items: BulkSendItem[],
+  onProgress: (done: number, total: number, current: string) => void,
+  concurrency = 5,
+  delayMs = 300
+): Promise<BulkSendResult[]> {
+  const transporter = nodemailer.createTransport({
+    host: config.smtpHost,
+    port: config.smtpPort,
+    secure: config.smtpTLS,
+    auth: { user: config.user, pass: config.password },
+    tls: { rejectUnauthorized: false },
+    pool: true,
+    maxConnections: concurrency
+  })
+
+  const results: BulkSendResult[] = []
+  let done = 0
+
+  // Process in chunks for concurrency control
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency)
+    const batchResults = await Promise.all(
+      batch.map(async (item) => {
+        try {
+          await transporter.sendMail({
+            from: `"${config.fromName}" <${config.user}>`,
+            to: item.to,
+            subject: item.subject,
+            html: item.body,
+            attachments: item.attachments?.map((att) => ({
+              filename: att.filename,
+              path: att.path
+            }))
+          })
+          done++
+          onProgress(done, items.length, item.company)
+          return { company: item.company, to: item.to, success: true }
+        } catch (err: unknown) {
+          done++
+          onProgress(done, items.length, item.company)
+          return {
+            company: item.company,
+            to: item.to,
+            success: false,
+            error: err instanceof Error ? err.message : String(err)
+          }
+        }
+      })
+    )
+    results.push(...batchResults)
+    // Delay between batches to avoid rate limits
+    if (i + concurrency < items.length) {
+      await new Promise((r) => setTimeout(r, delayMs))
+    }
+  }
+
+  transporter.close()
+  return results
+}
+
 export async function testConnection(config: EmailConfig): Promise<{ imap: boolean; smtp: boolean; error?: string }> {
   const result = { imap: false, smtp: false, error: undefined as string | undefined }
 

@@ -1,7 +1,7 @@
 import { ipcMain, dialog } from 'electron'
 import type Store from 'electron-store'
-import { fetchEmails, sendEmail, testConnection } from '../services/emailService'
-import type { EmailConfig } from '../services/emailService'
+import { fetchEmails, sendEmail, sendBulkEmails, testConnection } from '../services/emailService'
+import type { EmailConfig, BulkSendItem } from '../services/emailService'
 
 export function registerEmailHandlers(store: Store): void {
   ipcMain.handle('email:fetch-inbox', async () => {
@@ -47,6 +47,17 @@ export function registerEmailHandlers(store: Store): void {
     const config = store.get('emailConfig') as EmailConfig | undefined
     if (!config) throw new Error('Email not configured.')
     return testConnection(config)
+  })
+
+  ipcMain.handle('email:send-bulk', async (event, items: BulkSendItem[]) => {
+    const config = store.get('emailConfig') as EmailConfig | undefined
+    if (!config) throw new Error('Email not configured.')
+
+    const results = await sendBulkEmails(config, items, (done, total, current) => {
+      event.sender.send('email:bulk-progress', { done, total, current })
+    })
+
+    return results
   })
 
   ipcMain.handle('email:pick-attachment', async () => {

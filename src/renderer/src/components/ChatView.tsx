@@ -6,46 +6,92 @@ import {
   Bot,
   User,
   Sparkles,
-  Trash2
+  Trash2,
+  ChevronDown
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import type { ChatMessageType } from '../types/electron.d'
+import { useLang } from '../contexts/LanguageContext'
+import BulkApprovalModal, { type BulkEmailItem } from './BulkApprovalModal'
 
-const SUGGESTIONS = [
-  'Find programming companies in Vienna, Austria',
-  'Write a job application email in German',
-  'Show me IT companies in Graz and Linz',
-  'Draft a follow-up email for my application'
-]
+interface ChatMessageType {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
+  isStreaming?: boolean
+}
 
 function generateId(): string {
   return Math.random().toString(36).slice(2)
 }
 
+function extractBulkPlan(text: string): BulkEmailItem[] | null {
+  const match = text.match(/```bulk_email_plan\s*([\s\S]*?)```/)
+  if (!match) return null
+  try {
+    const parsed = JSON.parse(match[1].trim())
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].to) return parsed
+  } catch {
+    // not valid JSON
+  }
+  return null
+}
+
+function stripBulkBlock(text: string): string {
+  return text.replace(/```bulk_email_plan[\s\S]*?```/g, '').trim()
+}
+
 export default function ChatView(): React.ReactElement {
+  const { t } = useLang()
   const [messages, setMessages] = useState<ChatMessageType[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [attachment, setAttachment] = useState<{ path: string; filename: string } | null>(null)
+  const [bulkPlan, setBulkPlan] = useState<BulkEmailItem[] | null>(null)
+  const [modelName, setModelName] = useState<string>('')
+  const [showModelPicker, setShowModelPicker] = useState(false)
+  const [allModels, setAllModels] = useState<{ id: string; name: string; tier: string }[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const abortRef = useRef(false)
+
+  const SUGGESTIONS = [
+    t('suggestion1'),
+    t('suggestion2'),
+    t('suggestion3'),
+    t('suggestion4')
+  ]
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  useEffect(() => {
+    loadModel()
+  }, [])
+
+  const loadModel = async () => {
+    const [mods, sel] = await Promise.all([
+      window.api.openai.getModels(),
+      window.api.openai.getSelectedModel()
+    ])
+    setAllModels(mods || [])
+    const def = (mods || []).find((m: { id: string }) => m.id === sel)
+    if (def) setModelName((def as { name: string }).name)
+  }
+
   const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return
 
-    const userMessage: ChatMessageType = {
+    const userContent = input.trim() + (attachment ? `\n\n[Attached: ${attachment.filename}]` : '')
+    const userMsg: ChatMessageType = {
       id: generateId(),
       role: 'user',
-      content: input.trim() + (attachment ? `\n\n[Attached: ${attachment.filename}]` : ''),
+      content: userContent,
       timestamp: new Date()
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    setMessages((prev) => [...prev, userMsg])
     setInput('')
     setAttachment(null)
     setIsLoading(true)
@@ -54,13 +100,7 @@ export default function ChatView(): React.ReactElement {
     const assistantId = generateId()
     setMessages((prev) => [
       ...prev,
-      {
-        id: assistantId,
-        role: 'assistant',
-        content: '',
-        timestamp: new Date(),
-        isStreaming: true
-      }
+      { id: assistantId, role: 'assistant', content: '', timestamp: new Date(), isStreaming: true }
     ])
 
     try {
@@ -77,17 +117,28 @@ export default function ChatView(): React.ReactElement {
 
       const history = [
         ...messages.map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user' as const, content: userMessage.content }
+        { role: 'user' as const, content: userContent }
       ]
 
-      await window.api.openai.chat(history)
+      const fullResponse = await window.api.openai.chat(history)
+
+      const plan = extractBulkPlan(fullResponse)
+      if (plan && plan.length > 0) {
+        const profile = await window.api.settings.getProfile()
+        if (profile?.cvPath) {
+          plan.forEach((item: BulkEmailItem) => {
+            ;(item as BulkEmailItem & { attachments?: { filename: string; path: string }[] }).attachments = [
+              { filename: 'CV.pdf', path: profile.cvPath as string }
+            ]
+          })
+        }
+        setTimeout(() => setBulkPlan(plan), 300)
+      }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err)
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === assistantId
-            ? { ...m, content: `Error: ${errMsg}`, isStreaming: false }
-            : m
+          m.id === assistantId ? { ...m, content: `Error: ${errMsg}`, isStreaming: false } : m
         )
       )
     } finally {
@@ -103,20 +154,17 @@ export default function ChatView(): React.ReactElement {
     }
   }
 
-  const handleAttach = async () => {
-    const file = await window.api.email.pickAttachment()
-    if (file) setAttachment(file)
-  }
-
-  const handleClear = () => {
-    setMessages([])
-  }
-
   const autoResize = () => {
     const ta = textareaRef.current
     if (!ta) return
     ta.style.height = 'auto'
     ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'
+  }
+
+  const switchModel = async (modelId: string) => {
+    await window.api.openai.setSelectedModel(modelId)
+    await loadModel()
+    setShowModelPicker(false)
   }
 
   return (
@@ -128,22 +176,64 @@ export default function ChatView(): React.ReactElement {
             <Sparkles size={16} className="text-white" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-white">AI Job Assistant</h1>
-            <p className="text-xs text-muted">Powered by GPT-4o</p>
+            <h1 className="text-base font-semibold text-white">{t('chatTitle')}</h1>
+            <p className="text-xs text-muted">{t('chatSubtitle')}</p>
           </div>
         </div>
-        {messages.length > 0 && (
-          <button
-            onClick={handleClear}
-            className="flex items-center gap-1.5 text-xs text-muted hover:text-white px-3 py-1.5 rounded-lg hover:bg-surface-200 transition-colors"
-          >
-            <Trash2 size={13} />
-            Clear chat
-          </button>
-        )}
+
+        <div className="flex items-center gap-2">
+          {/* Model picker button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowModelPicker((v) => !v)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-surface-100 border border-border hover:border-accent text-white/70 hover:text-white transition-colors"
+            >
+              <Bot size={12} />
+              {modelName || 'Select Model'}
+              <ChevronDown size={11} />
+            </button>
+            {showModelPicker && (
+              <div className="absolute right-0 top-full mt-1 w-52 bg-surface-50 border border-border rounded-xl shadow-xl z-30 overflow-hidden">
+                {allModels.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => switchModel(m.id)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-surface-100 transition-colors"
+                  >
+                    <span className="text-white/80">{m.name}</span>
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded ${
+                        m.tier === 'free'
+                          ? 'bg-green-500/10 text-green-400'
+                          : 'bg-yellow-500/10 text-yellow-400'
+                      }`}
+                    >
+                      {m.tier === 'free' ? 'FREE' : 'PAID'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {messages.length > 0 && (
+            <button
+              onClick={() => setMessages([])}
+              className="flex items-center gap-1.5 text-xs text-muted hover:text-white px-3 py-1.5 rounded-lg hover:bg-surface-200 transition-colors"
+            >
+              <Trash2 size={13} />
+              {t('clearChat')}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Messages area */}
+      {/* Click-outside to close model picker */}
+      {showModelPicker && (
+        <div className="fixed inset-0 z-20" onClick={() => setShowModelPicker(false)} />
+      )}
+
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-8 pb-16">
@@ -151,12 +241,9 @@ export default function ChatView(): React.ReactElement {
               <div className="w-16 h-16 rounded-2xl bg-accent mx-auto mb-4 flex items-center justify-center">
                 <Bot size={32} className="text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-white mb-2">What can I help you with?</h2>
-              <p className="text-sm text-muted max-w-sm">
-                I can find companies, write application emails in German, and send them for you.
-              </p>
+              <h2 className="text-xl font-semibold text-white mb-2">{t('whatCanIHelp')}</h2>
+              <p className="text-sm text-muted max-w-sm">{t('chatDescription')}</p>
             </div>
-
             <div className="grid grid-cols-2 gap-3 w-full max-w-xl">
               {SUGGESTIONS.map((s) => (
                 <button
@@ -176,7 +263,6 @@ export default function ChatView(): React.ReactElement {
 
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            {/* Avatar */}
             <div
               className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${
                 msg.role === 'assistant' ? 'bg-accent' : 'bg-surface-300'
@@ -189,7 +275,6 @@ export default function ChatView(): React.ReactElement {
               )}
             </div>
 
-            {/* Bubble */}
             <div
               className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === 'user'
@@ -199,7 +284,7 @@ export default function ChatView(): React.ReactElement {
             >
               {msg.role === 'assistant' ? (
                 <div className="prose prose-invert prose-sm max-w-none">
-                  <ReactMarkdown>{msg.content || (msg.isStreaming ? '...' : '')}</ReactMarkdown>
+                  <ReactMarkdown>{stripBulkBlock(msg.content)}</ReactMarkdown>
                 </div>
               ) : (
                 <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -219,19 +304,19 @@ export default function ChatView(): React.ReactElement {
           <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-surface-100 rounded-lg w-fit">
             <Paperclip size={13} className="text-accent" />
             <span className="text-xs text-white/80">{attachment.filename}</span>
-            <button
-              onClick={() => setAttachment(null)}
-              className="text-muted hover:text-white ml-1"
-            >
+            <button onClick={() => setAttachment(null)} className="text-muted hover:text-white ml-1">
               ×
             </button>
           </div>
         )}
         <div className="flex items-end gap-3 bg-surface-100 rounded-2xl border border-border px-4 py-3">
           <button
-            onClick={handleAttach}
+            onClick={async () => {
+              const file = await window.api.email.pickAttachment()
+              if (file) setAttachment(file)
+            }}
             className="text-muted hover:text-white transition-colors flex-shrink-0 mb-0.5"
-            title="Attach CV or file"
+            title="Attach CV"
           >
             <Paperclip size={18} />
           </button>
@@ -244,7 +329,7 @@ export default function ChatView(): React.ReactElement {
               autoResize()
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Ask me to find companies, write emails, send applications..."
+            placeholder={t('chatPlaceholder')}
             rows={1}
             className="flex-1 bg-transparent text-white text-sm placeholder-muted resize-none outline-none leading-relaxed max-h-40"
           />
@@ -273,10 +358,13 @@ export default function ChatView(): React.ReactElement {
             </button>
           )}
         </div>
-        <p className="text-xs text-muted mt-2 text-center">
-          Press Enter to send, Shift+Enter for new line
-        </p>
+        <p className="text-xs text-muted mt-2 text-center">{t('pressEnter')}</p>
       </div>
+
+      {/* Bulk approval modal */}
+      {bulkPlan && (
+        <BulkApprovalModal items={bulkPlan} onClose={() => setBulkPlan(null)} />
+      )}
     </div>
   )
 }
