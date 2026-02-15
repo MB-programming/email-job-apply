@@ -60,7 +60,7 @@ const EMAIL_PRESETS: Record<string, Partial<EmailConfig>> = {
 interface ModelDef {
   id: string
   name: string
-  provider: 'openai' | 'gemini' | 'groq'
+  provider: string
   tier: string
   description: string
 }
