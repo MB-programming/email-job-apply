@@ -23,7 +23,16 @@ interface JobResult {
   source: string
 }
 
-const SOURCES = ['LinkedIn', 'Indeed', 'XING', 'StepStone']
+const SOURCES = ['Karriere.at', 'LinkedIn', 'Indeed', 'XING', 'StepStone']
+
+// Map display names to scraping source IDs
+const SOURCE_IDS: Record<string, string> = {
+  'Karriere.at': 'karriere',
+  'LinkedIn': 'linkedin',
+  'Indeed': 'indeed',
+  'XING': 'xing',
+  'StepStone': 'stepstone'
+}
 
 export default function JobsView(): React.ReactElement {
   const { t } = useLang()
@@ -31,7 +40,7 @@ export default function JobsView(): React.ReactElement {
   const [keyword, setKeyword] = useState('')
   const [location, setLocation] = useState('Vienna, Austria')
   const [maxResults, setMaxResults] = useState(20)
-  const [selectedSources, setSelectedSources] = useState<string[]>(['LinkedIn', 'Indeed'])
+  const [selectedSources, setSelectedSources] = useState<string[]>(['Karriere.at', 'LinkedIn'])
   const [searching, setSearching] = useState(false)
   const [progress, setProgress] = useState('')
   const [jobs, setJobs] = useState<JobResult[]>([])
@@ -73,7 +82,7 @@ export default function JobsView(): React.ReactElement {
         keyword: keyword.trim(),
         location: location.trim(),
         maxResults,
-        sources: selectedSources
+        sources: selectedSources.map((s) => SOURCE_IDS[s] || s.toLowerCase())
       })
       setJobs(results as JobResult[])
     } catch (err) {
