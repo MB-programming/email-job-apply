@@ -9,9 +9,10 @@ import SettingsView from './components/SettingsView'
 import JobsView from './components/JobsView'
 import CVBuilderView from './components/CVBuilderView'
 import JobCollectorView from './components/JobCollectorView'
+import EmailCleanerView from './components/EmailCleanerView'
 import ComposeModal from './components/ComposeModal'
 
-export type View = 'chat' | 'jobs' | 'cv' | 'collector' | 'inbox' | 'sent' | 'settings'
+export type View = 'chat' | 'jobs' | 'cv' | 'collector' | 'cleaner' | 'inbox' | 'sent' | 'settings'
 
 function AppInner(): React.ReactElement {
   const [activeView, setActiveView] = useState<View>('chat')
@@ -31,6 +32,7 @@ function AppInner(): React.ReactElement {
           {activeView === 'jobs' && <JobsView />}
           {activeView === 'cv' && <CVBuilderView />}
           {activeView === 'collector' && <JobCollectorView />}
+          {activeView === 'cleaner' && <EmailCleanerView />}
           {activeView === 'inbox' && <InboxView />}
           {activeView === 'sent' && <SentView />}
           {activeView === 'settings' && <SettingsView />}

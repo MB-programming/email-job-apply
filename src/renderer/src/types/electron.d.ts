@@ -36,6 +36,35 @@ export interface BulkSendResult {
   error?: string
 }
 
+export interface FolderInfo {
+  name: string
+  path: string
+  messages: number
+  unseen: number
+}
+
+export interface EmailHeader {
+  uid: number
+  from: string
+  fromEmail: string
+  subject: string
+  date: string
+  size: number
+  flags: string[]
+  unsubscribeUrl?: string
+  unsubscribeMail?: string
+}
+
+export interface EmailFilter {
+  id: string
+  name: string
+  field: 'from' | 'subject' | 'to'
+  op: 'contains' | 'equals' | 'startsWith' | 'endsWith'
+  value: string
+  action: 'delete' | 'move' | 'markRead'
+  targetFolder?: string
+}
+
 declare global {
   interface Window {
     api: {
@@ -105,6 +134,26 @@ declare global {
         onJob: (callback: (job: unknown) => void) => void
         onDone: (callback: (info: { total: number }) => void) => void
         removeListeners: () => void
+      }
+      cleaner: {
+        listAccounts: () => Promise<EmailConfig[]>
+        saveAccount: (payload: { idx: number; config: EmailConfig }) => Promise<{ success: boolean }>
+        deleteAccount: (idx: number) => Promise<{ success: boolean }>
+        testAccount: (idx: number) => Promise<{ imap: boolean; smtp: boolean; error?: string }>
+        listFolders: (accountIdx: number) => Promise<FolderInfo[]>
+        createFolder: (payload: { accountIdx: number; path: string }) => Promise<{ success: boolean }>
+        deleteFolder: (payload: { accountIdx: number; path: string }) => Promise<{ success: boolean }>
+        renameFolder: (payload: { accountIdx: number; oldPath: string; newPath: string }) => Promise<{ success: boolean }>
+        fetchHeaders: (payload: { accountIdx: number; folder: string; limit: number }) => Promise<EmailHeader[]>
+        deleteEmails: (payload: { accountIdx: number; folder: string; uids: number[] }) => Promise<{ success: boolean; count: number }>
+        emptyFolder: (payload: { accountIdx: number; folder: string }) => Promise<{ count: number }>
+        moveEmails: (payload: { accountIdx: number; folder: string; destFolder: string; uids: number[] }) => Promise<{ success: boolean; count: number }>
+        markRead: (payload: { accountIdx: number; folder: string; uids: number[] }) => Promise<{ success: boolean; count: number }>
+        fetchSubscriptions: (payload: { accountIdx: number; folder: string }) => Promise<EmailHeader[]>
+        bulkUnsubscribe: (payload: { accountIdx: number; items: EmailHeader[] }) => Promise<Array<{ uid: number; fromEmail: string; success: boolean; method: string; error?: string }>>
+        getFilters: () => Promise<EmailFilter[]>
+        saveFilters: (filters: EmailFilter[]) => Promise<{ success: boolean }>
+        onUnsubProgress: (callback: (p: { done: number; total: number; from: string }) => void) => () => void
       }
     }
   }

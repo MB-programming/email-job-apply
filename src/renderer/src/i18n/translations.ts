@@ -124,7 +124,8 @@ const translations = {
     sourceCol: 'Source',
     cvBuilder: 'CV Builder',
     cvBuilderTitle: 'CV Builder — ATS Ready',
-    jobCollector: 'Collector Bot'
+    jobCollector: 'Collector Bot',
+    emailCleaner: 'Email Cleaner'
   },
   ar: {
     // Sidebar
@@ -249,7 +250,8 @@ const translations = {
     sourceCol: 'المصدر',
     cvBuilder: 'منشئ CV',
     cvBuilderTitle: 'منشئ السيرة الذاتية — ATS',
-    jobCollector: 'بوت الجمع'
+    jobCollector: 'بوت الجمع',
+    emailCleaner: 'تنظيف الإيميل'
   }
 }
 

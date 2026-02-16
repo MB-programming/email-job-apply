@@ -98,6 +98,44 @@ const api = {
     }
   },
 
+  // Email Cleaner
+  cleaner: {
+    listAccounts: (): Promise<unknown[]> => ipcRenderer.invoke('cleaner:list-accounts'),
+    saveAccount: (payload: { idx: number; config: unknown }) =>
+      ipcRenderer.invoke('cleaner:save-account', payload),
+    deleteAccount: (idx: number) => ipcRenderer.invoke('cleaner:delete-account', idx),
+    testAccount: (idx: number) => ipcRenderer.invoke('email:test-connection-idx', idx),
+    listFolders: (accountIdx: number): Promise<unknown[]> =>
+      ipcRenderer.invoke('cleaner:list-folders', accountIdx),
+    createFolder: (payload: { accountIdx: number; path: string }) =>
+      ipcRenderer.invoke('cleaner:create-folder', payload),
+    deleteFolder: (payload: { accountIdx: number; path: string }) =>
+      ipcRenderer.invoke('cleaner:delete-folder', payload),
+    renameFolder: (payload: { accountIdx: number; oldPath: string; newPath: string }) =>
+      ipcRenderer.invoke('cleaner:rename-folder', payload),
+    fetchHeaders: (payload: { accountIdx: number; folder: string; limit: number }): Promise<unknown[]> =>
+      ipcRenderer.invoke('cleaner:fetch-headers', payload),
+    deleteEmails: (payload: { accountIdx: number; folder: string; uids: number[] }) =>
+      ipcRenderer.invoke('cleaner:delete-emails', payload),
+    emptyFolder: (payload: { accountIdx: number; folder: string }): Promise<{ count: number }> =>
+      ipcRenderer.invoke('cleaner:empty-folder', payload),
+    moveEmails: (payload: { accountIdx: number; folder: string; destFolder: string; uids: number[] }) =>
+      ipcRenderer.invoke('cleaner:move-emails', payload),
+    markRead: (payload: { accountIdx: number; folder: string; uids: number[] }) =>
+      ipcRenderer.invoke('cleaner:mark-read', payload),
+    fetchSubscriptions: (payload: { accountIdx: number; folder: string }): Promise<unknown[]> =>
+      ipcRenderer.invoke('cleaner:fetch-subscriptions', payload),
+    bulkUnsubscribe: (payload: { accountIdx: number; items: unknown[] }): Promise<unknown[]> =>
+      ipcRenderer.invoke('cleaner:bulk-unsubscribe', payload),
+    getFilters: (): Promise<unknown[]> => ipcRenderer.invoke('cleaner:get-filters'),
+    saveFilters: (filters: unknown[]) => ipcRenderer.invoke('cleaner:save-filters', filters),
+    onUnsubProgress: (callback: (p: { done: number; total: number; from: string }) => void) => {
+      const handler = (_: unknown, p: { done: number; total: number; from: string }) => callback(p)
+      ipcRenderer.on('cleaner:unsub-progress', handler)
+      return () => ipcRenderer.removeListener('cleaner:unsub-progress', handler)
+    }
+  },
+
   // Scraping operations
   scraping: {
     search: (params: {

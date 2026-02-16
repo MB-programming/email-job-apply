@@ -8,7 +8,8 @@ import {
   Bot,
   Briefcase,
   FileText,
-  Globe
+  Globe,
+  Sparkles
 } from 'lucide-react'
 import type { View } from '../App'
 import { useLang } from '../contexts/LanguageContext'
@@ -31,6 +32,7 @@ export default function Sidebar({
     { view: 'jobs', icon: Briefcase, labelKey: 'jobScraper' },
     { view: 'collector', icon: Globe, labelKey: 'jobCollector' },
     { view: 'cv', icon: FileText, labelKey: 'cvBuilder' },
+    { view: 'cleaner', icon: Sparkles, labelKey: 'emailCleaner' },
     { view: 'inbox', icon: Inbox, labelKey: 'inbox' },
     { view: 'sent', icon: Send, labelKey: 'sent' },
     { view: 'settings', icon: Settings, labelKey: 'settings' }

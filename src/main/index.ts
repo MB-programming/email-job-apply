@@ -8,6 +8,7 @@ import { registerSettingsHandlers } from './ipc/settingsHandlers'
 import { registerScrapingHandlers } from './ipc/scrapingHandlers'
 import { registerExportHandlers } from './ipc/exportHandlers'
 import { registerJobCollectorHandlers } from './ipc/jobCollectorHandlers'
+import { registerEmailCleanerHandlers } from './ipc/emailCleanerHandlers'
 
 const store = new Store()
 
@@ -66,6 +67,7 @@ app.whenReady().then(() => {
   registerScrapingHandlers()
   registerExportHandlers()
   registerJobCollectorHandlers()
+  registerEmailCleanerHandlers(store)
 
   createWindow()
 
