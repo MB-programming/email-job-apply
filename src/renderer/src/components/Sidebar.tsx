@@ -6,7 +6,9 @@ import {
   Settings,
   PenSquare,
   Bot,
-  Briefcase
+  Briefcase,
+  FileText,
+  Globe
 } from 'lucide-react'
 import type { View } from '../App'
 import { useLang } from '../contexts/LanguageContext'
@@ -27,6 +29,8 @@ export default function Sidebar({
   const navItems: { view: View; icon: React.ElementType; labelKey: string }[] = [
     { view: 'chat', icon: Bot, labelKey: 'aiChat' },
     { view: 'jobs', icon: Briefcase, labelKey: 'jobScraper' },
+    { view: 'collector', icon: Globe, labelKey: 'jobCollector' },
+    { view: 'cv', icon: FileText, labelKey: 'cvBuilder' },
     { view: 'inbox', icon: Inbox, labelKey: 'inbox' },
     { view: 'sent', icon: Send, labelKey: 'sent' },
     { view: 'settings', icon: Settings, labelKey: 'settings' }

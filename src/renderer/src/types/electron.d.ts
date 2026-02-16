@@ -93,6 +93,19 @@ declare global {
         onProgress: (callback: (p: { found: number; msg: string }) => void) => void
         removeProgressListeners: () => void
       }
+      export: {
+        cvPDF: (html: string) => Promise<{ success: boolean; path?: string }>
+        cvImage: (html: string) => Promise<{ success: boolean; path?: string }>
+        cvWord: (cv: unknown) => Promise<{ success: boolean; path?: string }>
+        jobsExcel: (jobs: unknown[]) => Promise<{ success: boolean; path?: string }>
+        jobsWord: (jobs: unknown[]) => Promise<{ success: boolean; path?: string }>
+      }
+      collector: {
+        start: (params: { keyword: string; location: string; maxResults: number; sources: string[] }) => Promise<unknown[]>
+        onJob: (callback: (job: unknown) => void) => void
+        onDone: (callback: (info: { total: number }) => void) => void
+        removeListeners: () => void
+      }
     }
   }
 }

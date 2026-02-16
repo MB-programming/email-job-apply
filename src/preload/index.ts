@@ -73,6 +73,31 @@ const api = {
       ipcRenderer.invoke('settings:save-profile', profile)
   },
 
+  // Export operations
+  export: {
+    cvPDF: (html: string) => ipcRenderer.invoke('export:cv-pdf', html),
+    cvImage: (html: string) => ipcRenderer.invoke('export:cv-image', html),
+    cvWord: (cv: unknown) => ipcRenderer.invoke('export:cv-word', cv),
+    jobsExcel: (jobs: unknown[]) => ipcRenderer.invoke('export:jobs-excel', jobs),
+    jobsWord: (jobs: unknown[]) => ipcRenderer.invoke('export:jobs-word', jobs)
+  },
+
+  // Job collector (visible browser)
+  collector: {
+    start: (params: { keyword: string; location: string; maxResults: number; sources: string[] }) =>
+      ipcRenderer.invoke('collector:start', params),
+    onJob: (callback: (job: unknown) => void) => {
+      ipcRenderer.on('collector:job', (_, job) => callback(job))
+    },
+    onDone: (callback: (info: { total: number }) => void) => {
+      ipcRenderer.on('collector:done', (_, info) => callback(info))
+    },
+    removeListeners: () => {
+      ipcRenderer.removeAllListeners('collector:job')
+      ipcRenderer.removeAllListeners('collector:done')
+    }
+  },
+
   // Scraping operations
   scraping: {
     search: (params: {
